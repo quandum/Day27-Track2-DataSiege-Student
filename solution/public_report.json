@@ -4,7 +4,7 @@
     "n_clean": 121,
     "tpr": 0.8974,
     "fpr": 0.0083,
-    "cost_ledger": 218.0,
+    "cost_ledger": 216.0,
     "budget": 220.0,
     "cost_overage": 0.0,
     "score": 44.62,
@@ -18,5 +18,5 @@
       "checks": "high"
     }
   },
-  "signature": "85272e9c577f3f58193a52112a2860e4fedd992820a6167c54cc5fdbfad909fd"
+  "signature": "43fc8c6417ef1ffc2e09c72c7176beba314c951c896329b84ca9eaf4b0ee2d34"
 }

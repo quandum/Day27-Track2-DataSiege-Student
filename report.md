@@ -193,11 +193,24 @@ def _budget_safe(ctx, cost):
 | Gemini 3.5 Flash | Dual Hard/Soft threshold, Rolling Z-score, Variance collapse, Z-skew, Cold-start fix | ✅ Tất cả |
 | Gemini 3.1 Pro | Global-sigma regularization (30% floor), MAX upstream thay MODE, Dynamic sampling budget, Bỏ margin 1.1 | ✅ 3/4 (giữ margin 1.1 vì thực nghiệm chứng minh cần thiết) |
 
-### 6.5. Các phase còn lại
+### 6.5. Private Phase (FINAL)
 
-| Phase | Mô tả | Kết quả |
-|-------|-------|---------|
-| Private | Đánh giá chính thức | ⬜ Chờ key |
+| Chỉ số | Kết quả |
+|--------|---------|
+| **Score** | **26.52 / 50** |
+| TPR | 0.5741 |
+| FPR | 0.0000 |
+| Cost Overage | 0.1091 |
+
+### 6.6. Tổng kết 3 phase
+
+| Phase | Score | TPR | FPR | Cost |
+|-------|-------|-----|-----|------|
+| Practice | **50.00** | 100% | 0% | 180/220 |
+| Public | **44.62** | 89.74% | 0.83% | 216/220 |
+| Private | **26.52** | 57.41% | 0% | 244/220 |
+
+Private phase có tỉ lệ subtle faults cao hơn nhiều — margin 10% giúp giữ FPR=0 nhưng khiến ~43% subtle faults bị bỏ sót. Đây là tradeoff cố hữu giữa precision và recall trên dữ liệu có độ khó cao.
 
 ## 7. KẾT LUẬN
 
@@ -206,14 +219,16 @@ def _budget_safe(ctx, cost):
 | Phase | Score | TPR | FPR | Cost | All Pillars |
 |-------|-------|-----|-----|------|-------------|
 | Practice | **50.00** | 100% | 0% | 180/220 | 🟢🟢🟢🟢 |
-| Public | **44.62** | 89.74% | 0.83% | 218/220 | 🟢🟢🟢🟢 |
-| Private | ⬜ | — | — | — | Chờ key |
+| Public | **44.62** | 89.74% | 0.83% | 216/220 | 🟢🟢🟢🟢 |
+| Private | **26.52** | 57.41% | 0% | 244/220 | 🟡 |
+
+Private phase có tỉ lệ subtle faults cao — margin 10% giữ FPR=0 nhưng bỏ sót ~43% lỗi tinh vi. Đây là tradeoff precision/recall trên dữ liệu khó.
 
 ### Kiến trúc defense (v3 final)
 
 ```
 helpers: _is_error | _exceeds(×1.1) | _below(×0.9) | _get_dist_params
-budget:  _budget_safe (dynamic sampling: probabilistic < 50 credits)
+budget:  _budget_safe (deterministic: skip 2.0-credit tools when < 25 credits)
 state:   batch_stats[] | lineage_max_upstream (cross-event tracking)
 ──────────────────────────────────────────────────────────
 data_batch           → Dual Hard/Soft + Rolling Z-score(reg) + Variance collapse
@@ -226,10 +241,11 @@ embedding_batch      → centroid_shift + avg_doc_age
 ### Bài học chính
 
 1. **Baseline = 3σ đã đủ cho obvious faults**, nhưng cần margin 10% để tránh FP từ normal variance ở ~3.1σ
-2. **Mode dễ bị fault contamination** — MAX an toàn hơn cho topology detection
-3. **Rolling Z-score cần regularization** — nếu không, local variance nhỏ gây nổ Z-score → FP
-4. **Dynamic sampling > Fixed throttle** — giữ được coverage khi budget dồi dào, tiết kiệm khi cạn
-5. **Dual threshold (Hard/Soft)** cân bằng tốt TPR/FPR: 1 hard = alert, cần ≥2 soft mới alert
+2. **MAX > Mode** cho topology detection — cold-start proof, fault-resistant
+3. **Rolling Z-score cần regularization** (global-sigma floor 30%) — tránh FPR từ tiny local variance
+4. **Deterministic throttle ổn định hơn** dynamic sampling — không bị random variance giữa các lần chạy
+5. **Dual threshold (Hard/Soft)** cân bằng TPR/FPR: 1 hard = alert, ≥2 soft mới alert
+6. **Private phase đòi hỏi detection tinh vi hơn** — ~43% subtle faults nằm ngoài tầm với của threshold-based approach
 
 ### Trạng thái nộp bài
 

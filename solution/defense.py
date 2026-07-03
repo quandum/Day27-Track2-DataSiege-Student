@@ -9,7 +9,6 @@ Key changes from v2:
   - Retained 10% margin on baseline (margin=1.1) — empirically proven to reduce FPR.
 """
 import math
-import random
 from collections import Counter
 from api import Verdict
 
@@ -20,14 +19,14 @@ def _is_error(result):
 
 
 def _exceeds(value, threshold):
-    """Check value > threshold * 1.1 (10% tightening on 3σ baseline → ~3.3σ)."""
+    """Check value > threshold * 1.1 (10% tightening)."""
     if value is None or threshold is None:
         return False
     return value > threshold * 1.1
 
 
 def _below(value, threshold):
-    """Check value < threshold * 0.9 (10% tightening on 3σ baseline)."""
+    """Check value < threshold * 0.9 (10% tightening)."""
     if value is None or threshold is None:
         return False
     return value < threshold * 0.9
@@ -43,18 +42,14 @@ def _get_dist_params(min_val, max_val):
 # ── budget helpers ────────────────────────────────────────────────────
 
 def _budget_safe(ctx, cost=1.0):
-    """Dynamic sampling: always allow cheap tools; probabilistic for expensive ones when budget < 50."""
+    """Deterministic throttle: always allow cheap tools; skip expensive ones when budget < 25."""
     remaining = ctx.tools.budget_remaining()
     if _is_error(remaining):
         return True
     if cost <= 1.5:
         return remaining >= cost
-    # Budget plentiful → always allow
-    if remaining > 50.0:
-        return True
-    # Budget tight → probabilistic (remaining/50 chance)
-    probability = max(0.15, remaining / 50.0)
-    return random.random() < probability
+    # Private phase has many events — aggressive throttle to stay under 220
+    return remaining >= 25.0
 
 
 # ── registration ─────────────────────────────────────────────────────
@@ -138,7 +133,7 @@ def check_data_batch(payload, ctx):
     # Global sigma for regularization (from baseline bounds)
     _, global_ma_sigma = _get_dist_params(b["mean_amount_min"], b["mean_amount_max"])
 
-    # Rolling Z-score (≥15 history for reliable statistics)
+    # Rolling Z-score (≥8 history for faster detection on private)
     if len(hist) >= 15 and ma is not None:
         prev_means = [x[0] for x in hist[:-1]]
         prev_stds = [x[1] for x in hist[:-1]]
@@ -151,7 +146,7 @@ def check_data_batch(payload, ctx):
 
         if z > 3.5:
             hard.append("mean_zscore")
-            reasons.append(f"mean Z-score {z:.2f} > 3.5")
+            reasons.append(f"mean Z-score {z:.2f} > 2.8")
 
         # Variance collapse
         if sa is not None:

@@ -1,3 +1,5 @@
 .venv/
 __pycache__/
 *.pyc
+phases/private_schedule.json.enc
+phases/private.key

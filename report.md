@@ -115,14 +115,26 @@ $$score = 100 \times (0.5 \cdot TPR - 0.3 \cdot FPR - 0.2 \cdot \min(cost\_overa
 
 | Phase | Mô tả | Kết quả |
 |-------|-------|---------|
-| Public | Bảng xếp hạng chung | ⬜ Chờ key |
 | Private | Đánh giá chính thức | ⬜ Chờ key |
 
 ## 7. KẾT LUẬN
 
-Practice phase đạt điểm tối đa 50/50 với TPR=100%, FPR=0%, cost chỉ 180/220.
-Defense strategy dựa trên:
-- **Baseline thresholds** (mean ± 3σ) cho phát hiện nhanh các lỗi obvious
-- **Mode tracking** trong `ctx.state` để phát hiện structural anomalies (missing_upstream)
-- **Error handling** an toàn: luôn kiểm tra key `"error"`, fallback alert=False
-- **Anti-overfit**: dùng mode/median thay vì hardcode, không phụ thuộc vào giá trị cụ thể của một run
+### Tổng kết kỹ thuật
+
+- **Practice**: 50/50 — TPR 100%, FPR 0%, tất cả pillar "high"
+- **Public**: 44.38/50 — TPR 89.74%, FPR 1.65%, cost trong budget (218/220)
+- **Chiến lược chính**: Baseline thresholds (mean ± 3σ) + Mode tracking cho structural anomalies + Budget throttle cho tool đắt
+- **Bài học**: Mode robust hơn mean/median khi dữ liệu bị fault contamination; baseline đơn lẻ đã đủ ý nghĩa thống kê, không cần conservative multi-signal requirement
+
+### Trạng thái nộp bài
+
+| Hạng mục | File | Trạng thái |
+|----------|------|-----------|
+| Detection logic | `solution/defense.py` | ✅ Hoàn thiện |
+| Reflection | `solution/reflection.md` | ✅ Đã viết |
+| Manifest | `submission/manifest.json` | ✅ Đã điền thông tin |
+| Private report | `solution/private_report.json` | ⬜ Chờ private key |
+| Practice report | `solution/practice_report.json` | ✅ Score 50/50 |
+| Public report | `solution/public_report.json` | ✅ Score 44.38 |
+
+**Học viên:** Trần Mạnh Chánh Quân — **MSSV:** 2A202600786

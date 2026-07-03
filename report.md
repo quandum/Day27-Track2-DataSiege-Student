@@ -65,14 +65,45 @@ $$score = 100 \times (0.5 \cdot TPR - 0.3 \cdot FPR - 0.2 \cdot \min(cost\_overa
 - Cache kết quả vào `ctx.state` để tránh gọi lại
 - Gọi `spend_so_far()` / `budget_remaining()` (free) để theo dõi
 
-## 6. KẾT QUẢ DỰ KIẾN
+## 6. KẾT QUẢ
+
+### 6.1. Practice Phase
+
+| Chỉ số | Kết quả |
+|--------|---------|
+| **Score** | **50.00 / 50** |
+| TPR (True Positive Rate) | 1.0000 (33/33 faults caught) |
+| FPR (False Positive Rate) | 0.0000 (0/87 false alarms) |
+| Cost | 180.00 / 220.00 (dư 40 credits) |
+| Cost Overage | 0.00 |
+
+| Pillar | Band | Ghi chú |
+|--------|------|---------|
+| checks | 🟢 **high** | Bắt được tất cả: freshness_lag, distribution_shift, volume_spike, null_spike |
+| contracts | 🟢 **high** | Bắt được tất cả: type_violation, schema_break |
+| lineage | 🟢 **high** | Bắt được tất cả: runtime_anomaly, missing_upstream, orphan_output |
+| ai_infra | 🟢 **high** | Bắt được tất cả: feature_skew (cả obvious lẫn subtle), embedding_drift, corpus_staleness |
+
+### 6.2. Chi tiết quá trình tinh chỉnh
+
+| Vòng | TPR | FPR | Score | Vấn đề & Sửa |
+|------|-----|-----|-------|-------------|
+| V1 | 0.8182 | 0.0 | 40.91 | data_batch: signal weight quá conservative → bỏ borderline logic |
+| V2 | 0.9394 | 0.0 | 46.97 | lineage: chỉ bắt empty upstream → thêm mode tracking |
+| V3 | 1.0000 | 0.0 | **50.00** | lineage: median → mode (robust với fault contamination) |
+
+### 6.3. Các phase còn lại
 
 | Phase | Mô tả | Kết quả |
 |-------|-------|---------|
-| Practice | Luyện tập với answer key | ⬜ Chưa chạy |
-| Public | Bảng xếp hạng chung | ⬜ Chưa chạy |
-| Private | Đánh giá chính thức | ⬜ Chưa chạy |
+| Public | Bảng xếp hạng chung | ⬜ Chờ key |
+| Private | Đánh giá chính thức | ⬜ Chờ key |
 
 ## 7. KẾT LUẬN
 
-*(Sẽ cập nhật sau khi hoàn thành các phase)*
+Practice phase đạt điểm tối đa 50/50 với TPR=100%, FPR=0%, cost chỉ 180/220.
+Defense strategy dựa trên:
+- **Baseline thresholds** (mean ± 3σ) cho phát hiện nhanh các lỗi obvious
+- **Mode tracking** trong `ctx.state` để phát hiện structural anomalies (missing_upstream)
+- **Error handling** an toàn: luôn kiểm tra key `"error"`, fallback alert=False
+- **Anti-overfit**: dùng mode/median thay vì hardcode, không phụ thuộc vào giá trị cụ thể của một run

@@ -84,15 +84,34 @@ $$score = 100 \times (0.5 \cdot TPR - 0.3 \cdot FPR - 0.2 \cdot \min(cost\_overa
 | lineage | 🟢 **high** | Bắt được tất cả: runtime_anomaly, missing_upstream, orphan_output |
 | ai_infra | 🟢 **high** | Bắt được tất cả: feature_skew (cả obvious lẫn subtle), embedding_drift, corpus_staleness |
 
-### 6.2. Chi tiết quá trình tinh chỉnh
+### 6.2. Public Phase
+
+| Chỉ số | Kết quả |
+|--------|---------|
+| **Score** | **44.38 / 50** |
+| TPR | 0.8974 (35/39 faults caught) |
+| FPR | 0.0165 (2/121 false alarms) |
+| Cost | 218.00 / 220.00 |
+| Cost Overage | 0.00 |
+
+| Pillar | Band |
+|--------|------|
+| checks | 🟢 high |
+| contracts | 🟢 high |
+| lineage | 🟢 high |
+| ai_infra | 🟢 high |
+
+### 6.3. Chi tiết quá trình tinh chỉnh
 
 | Vòng | TPR | FPR | Score | Vấn đề & Sửa |
 |------|-----|-----|-------|-------------|
 | V1 | 0.8182 | 0.0 | 40.91 | data_batch: signal weight quá conservative → bỏ borderline logic |
 | V2 | 0.9394 | 0.0 | 46.97 | lineage: chỉ bắt empty upstream → thêm mode tracking |
 | V3 | 1.0000 | 0.0 | **50.00** | lineage: median → mode (robust với fault contamination) |
+| V4 | 0.9231 | 0.0165 | 43.84 | Public: thêm budget throttle (threshold=20) để giảm cost 240→218 |
+| V5 | 0.8974 | 0.0165 | **44.38** | Public final: cost trong budget, tất cả pillar high |
 
-### 6.3. Các phase còn lại
+### 6.4. Các phase còn lại
 
 | Phase | Mô tả | Kết quả |
 |-------|-------|---------|

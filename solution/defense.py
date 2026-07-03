@@ -50,7 +50,7 @@ def _budget_safe(ctx, cost=1.0):
     # Always allow calls ≤ 1.5 credits; throttle 2.0-credit calls below 30 remaining
     if cost <= 1.5:
         return remaining >= cost
-    return remaining >= max(cost, 30.0)
+    return remaining >= max(cost, 20.0)
 
 
 # ── registration ─────────────────────────────────────────────────────
